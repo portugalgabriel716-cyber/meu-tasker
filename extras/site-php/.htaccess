@@ -1,0 +1,48 @@
+# Proteção pro htdocs do Tasker (Apache).
+#
+# ATENÇÃO: .htaccess NÃO funciona no nginx nem no LiteSpeed sem suporte. Se o seu
+# host usa um desses, o jeito seguro é manter o `tasker-data` FORA do htdocs
+# (aponte 'state_dir' no tasker-config.php).
+
+# 1) O estado guarda o refresh token: nunca pode ser baixado.
+<IfModule mod_alias.c>
+    RedirectMatch 404 (?i)/tasker-data(/|$)
+</IfModule>
+
+# 2) Nada de .json, .lock ou backup de editor sendo servido.
+<FilesMatch "\.(json|lock|tmp|bak|old|orig|save|swp|~)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+# 3) O config tem sua senha. PHP normalmente executa em vez de servir, mas se o
+#    PHP quebrar alguns servidores entregam o fonte — então bloqueia direto.
+<Files "tasker-config.php">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</Files>
+<Files "tasker-config.example.php">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</Files>
+
+# 4) Sem listagem de diretório.
+#
+# Se o SITE INTEIRO passar a dar erro 500 depois de subir este arquivo, é quase
+# certo que o host não permite "Options" em .htaccess: apague só a linha abaixo.
+Options -Indexes

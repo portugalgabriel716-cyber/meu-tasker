@@ -1,0 +1,15 @@
+# Tudo que é estado/segredo mora em dados/ (sessão, senha, log, históricos).
+dados/
+backup/
+cloud_state.json*
+state/
+
+# Site PHP: config com segredo e pasta de estado
+extras/site-php/tasker-config.php
+extras/site-php/tasker-data/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/

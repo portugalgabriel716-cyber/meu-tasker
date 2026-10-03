@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Tasker</title>
+<link rel="icon" href="/icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header class="top"><div class="top-in">
+  <div class="brand">
+    <img src="/icon.svg" alt="">
+    <h1>Tasker</h1>
+    <span id="pill" class="pill warn">conectando…</span>
+    <span class="grow"></span>
+    <button class="btn" id="b-checar">Checar agora</button>
+    <div class="menu">
+      <button class="btn" id="b-pausa" aria-haspopup="true" aria-expanded="false">Pausar ▾</button>
+      <div class="menu-list" id="m-pausa" hidden>
+        <button data-min="30">Por 30 minutos</button>
+        <button data-min="60">Por 1 hora</button>
+        <button data-min="120">Por 2 horas</button>
+        <button data-min="0">Até eu voltar</button>
+      </div>
+    </div>
+    <button class="btn primary" id="b-retomar" hidden>Retomar</button>
+  </div>
+  <nav class="tabs" role="tablist">
+    <button class="tab" role="tab" data-tab="painel" aria-selected="true">Painel</button>
+    <button class="tab" role="tab" data-tab="historico" aria-selected="false">Histórico</button>
+    <button class="tab" role="tab" data-tab="log-sec" aria-selected="false">Log</button>
+    <button class="tab" role="tab" data-tab="ajustes" aria-selected="false">Ajustes</button>
+  </nav>
+</div></header>
+
+<main>
+<p id="semchave" class="banner bad" hidden>Abra o Tasker pelo atalho — este endereço
+  sozinho não dá acesso.</p>
+
+<!-- ============================================================ painel -->
+<section id="painel">
+  <div id="login-box" class="card" hidden>
+    <h2>Entrar na Lidl Connect</h2>
+    <p id="login-motivo" style="margin-top:0"></p>
+    <div class="form">
+      <input type="tel" id="l-num" class="wide" placeholder="Número (Mobilfunknummer)" autocomplete="username">
+      <input type="password" id="l-senha" class="wide" placeholder="Senha" autocomplete="current-password">
+      <label class="chk"><input type="checkbox" id="l-lembrar" checked> lembrar pro login automático</label>
+      <button class="btn primary" id="b-entrar">Entrar</button>
+    </div>
+    <p class="small muted" style="margin-bottom:0">Ou <button class="btn ghost small" id="b-nav">entrar
+      pelo navegador</button> — abre o site da Lidl numa janela à parte; faça login lá e o
+      Tasker pega a sessão sozinho (serve quando a Lidl pede captcha).
+      <span id="nav-estado"></span></p>
+  </div>
+
+  <div id="pausa-box" class="banner warn" hidden>
+    <div class="grow"><b id="pausa-txt">Pausado</b>
+      <span class="small">O Tasker não toca na sessão: pode usar a conta no celular ou no site.</span></div>
+    <button class="btn primary" id="b-retomar2">Retomar agora</button>
+  </div>
+
+  <div id="off-box" class="banner bad" hidden>
+    <div class="grow"><b>Monitor desligado</b>
+      <span class="small">A tela está aberta, mas ninguém está vigiando o volume.</span></div>
+    <button class="btn primary" id="b-ligar">Ligar monitor</button>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <h2>Refill disponível</h2>
+      <div class="gauge">
+        <svg viewBox="0 0 200 200" role="img" aria-labelledby="g-big">
+          <circle cx="100" cy="100" r="82" fill="none" stroke="var(--line)" stroke-width="16"/>
+          <circle id="g-arc" cx="100" cy="100" r="82" fill="none" stroke="var(--ok)" stroke-width="16"
+                  stroke-linecap="round" transform="rotate(-90 100 100)"
+                  stroke-dasharray="0 1000"/>
+          <line id="g-lim" x1="100" y1="10" x2="100" y2="34" stroke="var(--muted)" stroke-width="3"
+                stroke-linecap="round"/>
+          <text x="100" y="98" text-anchor="middle" id="g-big" class="big" fill="currentColor"
+                font-size="34" font-weight="700">—</text>
+          <text x="100" y="124" text-anchor="middle" fill="var(--muted)" font-size="14" id="g-unit">GB</text>
+        </svg>
+        <div class="sub" id="g-sub">esperando a primeira leitura</div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Agora</h2>
+      <div class="stats">
+        <div class="stat"><div class="k">Próxima checagem</div><div class="v" id="s-prox">—</div><div class="d" id="s-prox-d"></div></div>
+        <div class="stat"><div class="k">Ritmo de consumo</div><div class="v" id="s-ritmo">—</div><div class="d">média dos últimos minutos</div></div>
+        <div class="stat"><div class="k">Refills hoje</div><div class="v" id="s-hoje">—</div><div class="d" id="s-hoje-d"></div></div>
+        <div class="stat"><div class="k">Último refill</div><div class="v" id="s-ult">—</div><div class="d" id="s-ult-d"></div></div>
+        <div class="stat"><div class="k">Sessão</div><div class="v" id="s-token">—</div><div class="d" id="s-token-d"></div></div>
+        <div class="stat"><div class="k">Login automático</div><div class="v" id="s-cred">—</div><div class="d" id="s-cred-d"></div></div>
+      </div>
+      <p class="small muted" id="s-fase" style="margin:12px 0 0"></p>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="row" style="margin-bottom:8px">
+      <h2 style="margin:0">Últimas 24 horas</h2><span class="grow"></span>
+      <span class="small muted" id="c-resumo"></span>
+    </div>
+    <div class="chart" id="chart1"><div class="empty">carregando…</div></div>
+  </div>
+</section>
+
+<!-- ========================================================= histórico -->
+<section id="historico" hidden>
+  <div class="card">
+    <div class="row" style="margin-bottom:8px">
+      <h2 style="margin:0">Volume de refill</h2><span class="grow"></span>
+      <div class="seg" id="range">
+        <button data-h="6">6 h</button><button data-h="24" aria-pressed="true">24 h</button>
+        <button data-h="72">3 dias</button><button data-h="168">7 dias</button>
+      </div>
+    </div>
+    <div class="chart" id="chart2"><div class="empty">carregando…</div></div>
+    <p class="small muted" id="h-resumo" style="margin:10px 0 0"></p>
+  </div>
+  <div class="card">
+    <h2>Refills no período</h2>
+    <ul class="list" id="h-lista"></ul>
+  </div>
+</section>
+
+<!-- =============================================================== log -->
+<section id="log-sec" hidden>
+  <div class="card">
+    <div class="row" style="margin-bottom:10px">
+      <input type="text" id="log-filtro" class="wide" placeholder="filtrar (ex.: refill)">
+      <label class="chk small"><input type="checkbox" id="log-seguir" checked> acompanhar o fim</label>
+      <span class="grow"></span>
+      <span class="small muted">completo em <code id="log-pasta">dados/tasker.log</code></span>
+    </div>
+    <div id="log" role="log" aria-live="off"></div>
+  </div>
+</section>
+
+<!-- ============================================================ ajustes -->
+<section id="ajustes" hidden>
+  <div id="avisos"></div>
+  <div id="cfg"></div>
+
+  <div class="card">
+    <h2>Conta</h2>
+    <div class="field"><div class="lbl"><b>Número e senha guardados</b>
+      <small>Com eles o Tasker refaz o login sozinho quando a sessão cai. Ficam em
+      <code>dados/credenciais.json</code>, legível só pelo seu usuário (é texto puro).
+      Errar a senha várias vezes trava a conta na Lidl — por isso há o limite de
+      tentativas em "Login automático".</small>
+      <div class="small" id="cred-estado" style="margin-top:4px"></div></div>
+      <div class="ctl"><button class="btn danger" id="b-cred-off">Apagar</button></div></div>
+    <div class="field"><div class="lbl"><b>Fazer login agora</b>
+      <small>Troca a sessão atual por uma nova (útil depois de mudar a senha).</small></div>
+      <div class="ctl"><button class="btn" id="b-relogin">Abrir login</button></div></div>
+  </div>
+
+  <div class="card">
+    <h2>Sistema</h2>
+    <div class="field"><div class="lbl"><b>Iniciar junto com o computador</b>
+      <small>O Tasker sobe em segundo plano quando você entra na sua conta. O atalho
+      continua abrindo esta janela.</small></div>
+      <div class="ctl"><input type="checkbox" class="switch" id="sw-auto" aria-label="Iniciar junto com o computador"></div></div>
+    <div class="field"><div class="lbl"><b>Atalho na área de trabalho e no menu</b>
+      <small>Um clique abre o Tasker (ou só a janela, se ele já estiver rodando).</small></div>
+      <div class="ctl"><button class="btn" id="b-atalho">Criar atalho</button></div></div>
+    <div class="field"><div class="lbl"><b>Monitor</b>
+      <small>Desligar para de vigiar o volume sem fechar o Tasker. Fechar a janela
+      não desliga nada.</small></div>
+      <div class="ctl"><button class="btn" id="b-monitor">—</button></div></div>
+    <div class="field"><div class="lbl"><b>Avisos</b><small>Dispara uma notificação de teste
+      (sistema, ntfy e webhook, o que estiver ligado).</small></div>
+      <div class="ctl"><button class="btn" id="b-teste">Testar aviso</button></div></div>
+    <div class="field"><div class="lbl"><b>Encerrar o Tasker</b>
+      <small id="sis-info"></small></div>
+      <div class="ctl"><button class="btn danger" id="b-sair">Sair</button></div></div>
+  </div>
+
+  <div class="savebar">
+    <button class="btn primary" id="b-salvar">Salvar ajustes</button>
+    <button class="btn danger" id="b-padroes">Restaurar padrões</button>
+    <span class="small muted">Valem na hora — não precisa reiniciar nada.</span>
+  </div>
+</section>
+</main>
+<div id="toast" role="status"></div>
+<script src="/app.js"></script>
+</body>
+</html>

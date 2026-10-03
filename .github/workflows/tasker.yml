@@ -1,0 +1,63 @@
+name: Tasker Lidl refill
+
+# Opção "sem cartão de crédito": o GitHub roda o ciclo de tempo em tempo.
+#
+# Duas limitações que você precisa saber (estão no README, seção Servidor):
+#  * cron do Actions atrasa — o mínimo é 5 min, mas na prática varia bastante;
+#  * o GitHub DESLIGA o agendamento se o repositório ficar 60 dias sem commit.
+#
+# O estado (refresh token rotacionado) vive no cache do Actions. É o ponto frágil
+# desta opção: se o cache for evacuado, refaça o --bootstrap.
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:        # botão de rodar na mão, útil pra testar
+
+# Duas execuções ao mesmo tempo brigariam pelo mesmo refresh token.
+concurrency:
+  group: tasker-refill
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  refill:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      # Chave única por execução + restore-keys: é como se guarda estado mutável
+      # no cache do Actions (uma entrada de cache não pode ser sobrescrita).
+      - name: Restaurar estado
+        uses: actions/cache/restore@v4
+        with:
+          path: state
+          key: tasker-state-${{ github.run_id }}
+          restore-keys: |
+            tasker-state-
+
+      - name: Rodar um ciclo
+        env:
+          TASKER_REFRESH_TOKEN: ${{ secrets.TASKER_REFRESH_TOKEN }}
+          # opcionais: com os dois ele reloga sozinho se o token morrer
+          TASKER_MSISDN: ${{ secrets.TASKER_MSISDN }}
+          TASKER_PASSWORD: ${{ secrets.TASKER_PASSWORD }}
+          TASKER_DATA_DIR: state
+          TASKER_STATE: state/cloud_state.json
+          TASKER_NOTIFY: "0"
+          TASKER_NTFY_TOPIC: ${{ secrets.TASKER_NTFY_TOPIC }}
+          TASKER_GB_THRESHOLD: ${{ vars.TASKER_GB_THRESHOLD }}
+          TASKER_MAX_WITHOUT_REFILL: ${{ vars.TASKER_MAX_WITHOUT_REFILL }}
+        run: python Tasker.pyw --once
+
+      # Grava sempre, mesmo se o ciclo falhou: o token pode ter rotacionado antes
+      # do erro, e perder isso é o que quebra a corrente.
+      - name: Guardar estado
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: state
+          key: tasker-state-${{ github.run_id }}
