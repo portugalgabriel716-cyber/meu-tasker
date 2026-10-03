@@ -99,6 +99,30 @@
     </div>
   </div>
 
+  <div class="card" id="stress-card">
+    <div class="row" style="margin-bottom:6px">
+      <h2 style="margin:0">Teste de estresse da rede</h2>
+      <span id="st-pill" class="pill warn" hidden>baixando</span>
+      <span class="grow"></span>
+      <button class="btn" id="b-stress">Iniciar teste</button>
+    </div>
+    <p class="small muted" id="st-desc" style="margin:0 0 10px">Baixa o máximo que a rede
+      aguentar, em várias conexões, pra ver o refill dando conta de consumo pesado. Nada vai
+      pro disco.</p>
+    <div id="st-box" hidden>
+      <div class="bar" aria-hidden="true"><i id="st-bar"></i></div>
+      <div class="stats" style="margin-top:10px">
+        <div class="stat"><div class="k">Velocidade agora</div><div class="v" id="st-vel">—</div><div class="d" id="st-vel-d"></div></div>
+        <div class="stat"><div class="k">Baixado</div><div class="v" id="st-gb">—</div><div class="d" id="st-gb-d"></div></div>
+        <div class="stat"><div class="k">Tempo</div><div class="v" id="st-tempo">—</div><div class="d" id="st-tempo-d"></div></div>
+        <div class="stat"><div class="k">Refills durante o teste</div><div class="v" id="st-ref">—</div><div class="d" id="st-ref-d"></div></div>
+        <div class="stat"><div class="k">Volume mais baixo</div><div class="v" id="st-min">—</div><div class="d" id="st-min-d"></div></div>
+        <div class="stat"><div class="k">Conexões ativas</div><div class="v" id="st-con">—</div><div class="d" id="st-con-d"></div></div>
+      </div>
+      <p class="small" id="st-fim" style="margin:10px 0 0" hidden></p>
+    </div>
+  </div>
+
   <div class="card">
     <div class="row" style="margin-bottom:8px">
       <h2 style="margin:0">Últimas 24 horas</h2><span class="grow"></span>

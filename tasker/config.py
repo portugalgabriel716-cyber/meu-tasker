@@ -115,6 +115,36 @@ SETTINGS = [
                 "tentar login e avisa você.",
     },
 
+    # ------------------------------------------------------ teste de estresse
+    {
+        "key": "stress_streams", "env": "TASKER_STRESS_STREAMS",
+        "default": 6, "type": "int", "unit": "x", "min": 1, "max": 32,
+        "group": "Teste de estresse", "label": "Conexões paralelas",
+        "help": "Quantos downloads ao mesmo tempo. Mais conexões enchem melhor uma "
+                "rede rápida; 6 costuma bastar pra 4G/5G.",
+    },
+    {
+        "key": "stress_max_gb", "env": "TASKER_STRESS_MAX_GB",
+        "default": 3.0, "type": "float", "unit": "GB", "min": 0.1, "max": 200.0,
+        "group": "Teste de estresse", "label": "Parar depois de baixar",
+        "help": "O teste consome volume de verdade (é o objetivo). Ele para sozinho "
+                "ao chegar aqui.",
+    },
+    {
+        "key": "stress_max_minutes", "env": "TASKER_STRESS_MAX_MINUTES",
+        "default": 15 * 60, "type": "int", "unit": "min", "min": 60, "max": 6 * 3600,
+        "group": "Teste de estresse", "label": "Parar depois de",
+        "help": "Limite de tempo, valendo o que vier primeiro com o de cima.",
+    },
+    {
+        "key": "stress_url", "env": "TASKER_STRESS_URL",
+        "default": "", "type": "str", "max_len": 500,
+        "pattern": r"|https?://\S+",
+        "group": "Teste de estresse", "label": "Arquivo de teste próprio (opcional)",
+        "help": "Vazio = servidores de teste de velocidade da Hetzner, OVH e Tele2 "
+                "(arquivos de 10 GB, revezando). Ponha uma URL se quiser usar outro.",
+    },
+
     # --------------------------------------------------------------- avisos
     {
         "key": "notify", "env": "TASKER_NOTIFY",

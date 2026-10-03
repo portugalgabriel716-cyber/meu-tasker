@@ -26,6 +26,7 @@ from .browser_login import BrowserLogin
 from .engine import Monitor
 from .logs import Logger
 from .notify import Notifier
+from .stress import StressTest
 
 _LOCAL = urllib.request.build_opener(urllib.request.ProxyHandler({}))   # sem proxy
 
@@ -36,6 +37,7 @@ class App:
         self.monitor = Monitor(log)
         self.monitor.notifier = Notifier(lambda: self.monitor.cfg, log)
         self.login = BrowserLogin(log, self._browser_tokens)
+        self.stress = StressTest(log, lambda: (self.monitor.status.get("volume") or {}).get("left"))
         self.server = None
         self._browser = system.find_browser()
         self._today_cache = (None, None, 0)
@@ -61,7 +63,12 @@ class App:
         snap = self.monitor.snapshot()
         snap["refills_hoje"] = self._refills_today()
         snap["limite"] = self.monitor.cfg["gb_threshold"]
-        return {"monitor": snap, "login_navegador": self.login.info(),
+        stress = self.stress.info()
+        stress["cfg_gb"] = self.monitor.cfg["stress_max_gb"]
+        stress["cfg_min"] = self.monitor.cfg["stress_max_minutes"] // 60
+        if stress["inicio"]:
+            stress["refills"], stress["falhas"] = engine.refills_since(stress["inicio"])
+        return {"monitor": snap, "login_navegador": self.login.info(), "estresse": stress,
                 "sistema": {"versao": __version__, "autostart": system.autostart_enabled(),
                             "navegador": bool(self._browser), "pasta": str(paths.DATA_DIR),
                             "windows": store.IS_WINDOWS}}
@@ -131,6 +138,14 @@ class App:
             made = system.create_shortcuts()
             return {"msg": ("Atalho criado: " + " · ".join(made)) if made else
                     "Não consegui criar o atalho."}
+        if act == "estresse_iniciar":
+            c = m.cfg
+            msg = self.stress.start(c["stress_streams"], c["stress_max_gb"],
+                                    c["stress_max_minutes"], c["stress_url"])
+            m.poke()   # leitura nova já, pra o ritmo de consumo começar a contar
+            return {"msg": msg}
+        if act == "estresse_parar":
+            return {"msg": self.stress.stop()}
         if act == "sair":
             threading.Timer(0.3, self.shutdown).start()
             return {"msg": "Encerrando o Tasker…"}
@@ -154,6 +169,7 @@ class App:
         finally:
             stop.set()
             self.login.cancel()
+            self.stress.stop("o Tasker foi encerrado")
             self.monitor.stop()
             self.server.unpublish()
             self.log("Tasker encerrado.")

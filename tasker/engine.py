@@ -82,6 +82,27 @@ def record_event(kind, **data):
         pass
 
 
+def refills_since(t0):
+    """(ok, falhas) registrados a partir de t0 — o teste de estresse mostra."""
+    ok = fail = 0
+    try:
+        with open(paths.REFILLS_FILE, "rb") as f:
+            f.seek(0, 2)
+            f.seek(max(0, f.tell() - 64 * 1024))
+            lines = f.read().decode("utf-8", "replace").splitlines()
+    except OSError:
+        return 0, 0
+    for line in lines:
+        try:
+            ev = json.loads(line)
+        except ValueError:
+            continue
+        if isinstance(ev, dict) and (ev.get("t") or 0) >= t0:
+            ok += ev.get("kind") == "refill_ok"
+            fail += ev.get("kind") == "refill_fail"
+    return ok, fail
+
+
 def record_volume(gb):
     try:
         paths.ensure_data_dir()

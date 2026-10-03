@@ -162,6 +162,8 @@ function desenhaEstado() {
   $("#s-fase").textContent = fase;
   tick();
 
+  desenhaEstresse();
+
   // sistema
   $("#sw-auto").checked = !!sis.autostart;
   $("#b-monitor").textContent = m.ligado ? "Desligar monitor" : "Ligar monitor";
@@ -170,6 +172,55 @@ function desenhaEstado() {
 
   document.title = (txt === "vigiando" ? "✅ " : cls === "bad" ? "⛔ " : "⏸ ") +
     (v ? gb(v.left) + " GB · " : "") + "Tasker";
+}
+
+function mmss(s) {
+  s = Math.max(0, Math.round(s));
+  return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0");
+}
+
+function desenhaEstresse() {
+  const e = estado.estresse;
+  if (!e) return;
+  const rodando = e.estado === "rodando", parando = e.estado === "parando";
+  const b = $("#b-stress");
+  b.textContent = rodando ? "Parar teste" : parando ? "Parando…" : "Iniciar teste";
+  b.className = "btn" + (rodando ? " stop" : " primary");
+  b.disabled = parando || (!rodando && !estado.monitor.ligado);
+  b.title = !rodando && !estado.monitor.ligado ? "Ligue o monitor antes: sem ele ninguém faz o refill." : "";
+  $("#st-pill").hidden = !rodando;
+  $("#st-desc").textContent = "Baixa o máximo que a rede aguentar, em várias conexões, pra ver o refill " +
+    "dando conta de consumo pesado. Nada vai pro disco. Consome volume de verdade: para sozinho em " +
+    gbCurto(e.cfg_gb) + " GB ou " + e.cfg_min + " min (mude em Ajustes).";
+  $("#st-box").hidden = !e.inicio;
+  if (!e.inicio) return;
+  const frac = Math.max(e.limite_bytes ? e.bytes / e.limite_bytes : 0,
+                        e.limite_segundos ? e.segundos / e.limite_segundos : 0);
+  $("#st-bar").style.width = Math.min(100, frac * 100).toFixed(1) + "%";
+  $("#st-vel").textContent = rodando ? gbCurto(Math.round(e.mbps)) + " Mbit/s" : "—";
+  $("#st-vel-d").textContent = "média " + Math.round(e.media_mbps) + " · pico " + Math.round(e.pico_mbps);
+  $("#st-gb").textContent = gb(e.bytes / 1e9) + " GB";
+  $("#st-gb-d").textContent = "limite " + gbCurto(e.limite_bytes / 1e9) + " GB";
+  $("#st-tempo").textContent = mmss(e.segundos);
+  $("#st-tempo-d").textContent = "limite " + Math.round(e.limite_segundos / 60) + " min";
+  $("#st-ref").textContent = e.refills == null ? "—" : e.refills;
+  $("#st-ref-d").textContent = e.falhas ? e.falhas + " falha(s)!" : (e.refills ? "o Tasker deu conta" : "");
+  $("#st-min").textContent = e.volume_minimo == null ? "—" : gb(e.volume_minimo) + " GB";
+  const lim = estado.monitor.limite;
+  $("#st-min-d").textContent = e.volume_minimo == null ? "" :
+    (e.volume_minimo <= 0.005 ? "zerou — o refill não acompanhou" :
+     e.volume_minimo < lim ? "passou um pouco do limite" : "sempre acima do limite");
+  $("#st-con").textContent = rodando ? e.conexoes : "—";
+  $("#st-con-d").textContent = e.erros ? e.erros + " erro(s) de servidor" : "";
+  const fim = $("#st-fim");
+  fim.hidden = e.estado !== "parado";
+  if (e.estado === "parado") {
+    const ok = !e.falhas && e.volume_minimo != null && e.volume_minimo > 0.005;
+    fim.innerHTML = (ok ? '<span class="okc">✓</span> ' : '<span class="badc">!</span> ') +
+      esc("Terminou (" + (e.motivo || "parado") + "). " +
+          (ok ? "O refill acompanhou o consumo." : e.falhas ? "Houve falha de refill — veja o Log." :
+           e.volume_minimo == null ? "" : "O volume chegou a zerar — veja o Log."));
+  }
 }
 
 function tick() {
@@ -398,6 +449,13 @@ for (const b of $$("#m-pausa button")) {
   });
 }
 $("#b-checar").addEventListener("click", () => acao("checar"));
+$("#b-stress").addEventListener("click", () => {
+  const e = estado && estado.estresse;
+  if (e && e.estado === "rodando") { acao("estresse_parar"); return; }
+  if (!confirm("Iniciar o teste de estresse? Ele vai baixar o mais rápido possível e consumir " +
+               "volume de verdade (até " + gbCurto(e ? e.cfg_gb : 3) + " GB).")) return;
+  acao("estresse_iniciar");
+});
 $("#b-retomar").addEventListener("click", () => acao("retomar"));
 $("#b-retomar2").addEventListener("click", () => acao("retomar"));
 $("#b-ligar").addEventListener("click", () => acao("ligar"));

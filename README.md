@@ -56,6 +56,29 @@ contadores ficam em disco, então reiniciar não zera a trava.
   renovar token nem pedir refill. Use isso pra entrar na conta pelo celular ou
   pelo site sem os dois se derrubarem, já que a Lidl aceita uma sessão por vez.
 * **Checar agora**: fura a espera do próximo ciclo.
+* **Teste de estresse da rede** (no Painel): baixa o máximo que a rede aguentar,
+  pra conferir se o refill dá conta de consumo pesado. Detalhes abaixo.
+
+### Teste de estresse
+
+Baixa arquivos de 10 GB de servidores feitos pra teste de velocidade (Hetzner em
+Nuremberg, Falkenstein e Helsinque, OVH e Tele2), em várias conexões paralelas
+espalhadas entre eles, e **joga os bytes fora na memória**: nada vai pro disco e
+quase não gasta CPU. Um servidor que falha fica de lado por um minuto e as
+conexões seguem pelos outros. Enquanto roda, o cartão mostra a velocidade (atual,
+média e pico), quanto já baixou, quantos refills entraram durante o teste e o
+volume mais baixo que a conta atingiu. No fim, diz se o refill acompanhou.
+
+**Consome volume de verdade** (é o objetivo), então para sozinho no limite de GB
+ou de tempo (padrão 3 GB / 15 min), ou quando o Tasker é encerrado. Os limites, o
+número de conexões e uma URL própria (opcional) ficam em *Ajustes → Teste de
+estresse*. O monitor precisa estar ligado, porque é ele quem faz o refill.
+
+Dá pra ver no gráfico uma coisa que o teste deixa clara: a Lidl atualiza o volume
+**em degraus** (~0,37 GB a cada ~80 s com uso pesado), não continuamente. Por isso,
+com uso pesado, o refill pode sair um pouco abaixo do limite: o número reportado
+atravessa o limite de uma vez. Se o volume chegar perto de zero nos testes, suba
+o limite em *Ajustes → Checagem*.
 
 ## Como funciona
 
@@ -170,7 +193,7 @@ uma implementação à parte, em PHP, pra hospedagem compartilhada.
 |---|---|
 | `Tasker.pyw` | o programa (duplo clique no Windows; `python3 Tasker.pyw` em qualquer lugar) |
 | `Tasker.sh` | atalho do Linux pro mesmo |
-| `tasker/` | o código: `engine.py` (o motor), `lidl.py` (a API), `app.py` (tela + linha de comando), `server.py`, `browser_login.py`, `system.py`, `config.py`, `ui/` |
+| `tasker/` | o código: `engine.py` (o motor), `lidl.py` (a API), `app.py` (tela + linha de comando), `server.py`, `browser_login.py`, `stress.py` (teste de estresse), `system.py`, `config.py`, `ui/` |
 | `dados/` | **tudo que é seu**: sessão, senha, ajustes, log, históricos. Pra levar o Tasker pra outro PC, copie a pasta inteira. |
 | `tests/` | testes offline (API de mentira) |
 | `extras/site-php/` | a versão PHP |
@@ -180,7 +203,7 @@ uma implementação à parte, em PHP, pra hospedagem compartilhada.
 ## Testes
 
 ```bash
-python3 tests/test_tasker.py              # 57 testes, offline, ~40 s
+python3 tests/test_tasker.py              # 60 testes, offline, ~45 s
 python3 extras/site-php/test_php.py       # a versão PHP (precisa de php-cli)
 ```
 

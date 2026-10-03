@@ -720,6 +720,8 @@ class TestCli(Base):
         finally:
             if proc.poll() is None:
                 proc.kill()
+                proc.wait(10)
+            proc.stderr.close()
 
     def test_bootstrap_and_credentials(self):
         self.assertEqual(self.run_cli("--bootstrap").returncode, 1)
@@ -791,10 +793,106 @@ class TestBrowserLogin(Base):
         finally:
             bl.cancel()
             srv.shutdown()
+            srv.server_close()
         self.assertEqual(bl.state, "ok", bl.message)
         self.assertEqual(got[0]["access"], "tok-a")
         self.assertEqual(got[0]["refresh"], "tok-r")
 
+
+
+# ============================================================ teste de estresse
+class _BigFile:
+    """Servidor de 'teste de velocidade' local: devolve arquivos de 8 MB de zeros."""
+    SIZE = 8 * 1024 * 1024
+
+    def __enter__(self):
+        import http.server
+        size = self.SIZE
+
+        class H(http.server.BaseHTTPRequestHandler):
+            def log_message(self, *a):
+                pass
+
+            def do_GET(self):
+                if self.path.startswith("/quebrado"):
+                    self.send_error(500)
+                    return
+                self.send_response(200)
+                self.send_header("Content-Length", str(size))
+                self.end_headers()
+                chunk = bytes(64 * 1024)
+                try:
+                    for _ in range(size // len(chunk)):
+                        self.wfile.write(chunk)
+                except OSError:
+                    pass
+
+        self.srv = http.server.ThreadingHTTPServer(("127.0.0.1", 0), H)
+        self.srv.daemon_threads = True
+        threading.Thread(target=self.srv.serve_forever, daemon=True).start()
+        self.url = f"http://127.0.0.1:{self.srv.server_address[1]}"
+        return self
+
+    def __exit__(self, *a):
+        self.srv.shutdown()
+        self.srv.server_close()
+
+
+class TestStress(Base):
+    def wait_stopped(self, st, secs=30):
+        for _ in range(secs * 10):
+            if st.state == "parado":
+                return
+            time.sleep(0.1)
+        self.fail("o teste de estresse não parou")
+
+    def test_stops_at_gb_limit(self):
+        from tasker.stress import StressTest
+        log = Logger(to_file=False, to_stdout=False)
+        with _BigFile() as big:
+            st = StressTest(log, lambda: 0.7)
+            st.start(streams=3, max_gb=0.05, max_seconds=600, custom_url=big.url + "/10GB.bin")
+            self.assertEqual(st.start(), "O teste já está rodando.")
+            self.wait_stopped(st)
+        info = st.info()
+        self.assertGreaterEqual(info["bytes"], 50e6)
+        self.assertIn("50", "".join(str(x) for x in [st.limit_bytes]))
+        self.assertIn("limite de 0.05 GB", info["motivo"])
+        self.assertEqual(info["volume_minimo"], 0.7)
+        self.assertGreater(info["pico_mbps"] + info["media_mbps"], 0)
+        self.assertTrue(any("Teste de estresse terminou" in l for l in log.since(0)["linhas"]))
+
+    def test_manual_stop_and_bad_mirror(self):
+        from tasker import stress
+        log = Logger(to_file=False, to_stdout=False)
+        with _BigFile() as big:
+            st = stress.StressTest(log)
+            st.start(streams=2, max_gb=100, max_seconds=600)
+            st.urls = (big.url + "/quebrado", big.url + "/ok.bin")   # um servidor fora do ar
+            for _ in range(100):
+                if st.info()["bytes"] > 4e6:
+                    break
+                time.sleep(0.1)
+            self.assertIn("Parando", st.stop())
+            self.wait_stopped(st)
+        self.assertGreater(st.info()["bytes"], 4e6)
+        self.assertEqual(st.info()["motivo"], "parado por você")
+        self.assertEqual(st.stop(), "O teste não está rodando.")
+
+    def test_action_and_refill_count(self):
+        app = App(Logger(to_file=False, to_stdout=False))
+        app.monitor.api.close()
+        with _BigFile() as big:
+            app.monitor.cfg.update(stress_url=big.url + "/x.bin", stress_max_gb=0.02,
+                                   stress_streams=2)
+            engine.record_event("refill_ok", before=0.5, after=1.0)   # antes: não conta
+            time.sleep(0.05)
+            self.assertIn("iniciado", app.action({"acao": "estresse_iniciar"})["msg"])
+            engine.record_event("refill_ok", before=0.4, after=1.0)
+            self.wait_stopped(app.stress)
+        st = app.state()["estresse"]
+        self.assertEqual((st["refills"], st["falhas"]), (1, 0))
+        self.assertEqual(st["cfg_gb"], 0.02)
 
 # ====================================================================== fim
 class TestZZSentinel(unittest.TestCase):
