@@ -39,6 +39,20 @@ jobs:
           restore-keys: |
             tasker-state-
 
+      # Compilar leva minutos; o binário fica em cache até o código mudar.
+      - name: Restaurar o programa
+        id: binario
+        uses: actions/cache@v4
+        with:
+          path: tasker-bin
+          key: tasker-bin-${{ hashFiles('src/**', 'Cargo.lock', 'Cargo.toml') }}
+
+      - name: Compilar (só o motor, sem janela)
+        if: steps.binario.outputs.cache-hit != 'true'
+        run: |
+          cargo build --release --no-default-features
+          cp target/release/tasker tasker-bin
+
       - name: Rodar um ciclo
         env:
           TASKER_REFRESH_TOKEN: ${{ secrets.TASKER_REFRESH_TOKEN }}
@@ -51,7 +65,7 @@ jobs:
           TASKER_NTFY_TOPIC: ${{ secrets.TASKER_NTFY_TOPIC }}
           TASKER_GB_THRESHOLD: ${{ vars.TASKER_GB_THRESHOLD }}
           TASKER_MAX_WITHOUT_REFILL: ${{ vars.TASKER_MAX_WITHOUT_REFILL }}
-        run: python Tasker.pyw --once
+        run: ./tasker-bin --once
 
       # Grava sempre, mesmo se o ciclo falhou: o token pode ter rotacionado antes
       # do erro, e perder isso é o que quebra a corrente.

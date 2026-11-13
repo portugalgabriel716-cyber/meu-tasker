@@ -8,8 +8,12 @@ state/
 extras/site-php/tasker-config.php
 extras/site-php/tasker-data/
 
-# Python
+# Rust: o que o build gera
+/target/
+/tasker
+/tasker.novo
+/tasker.exe
+
+# Python (só o teste da versão PHP)
 __pycache__/
 *.pyc
-.venv/
-venv/

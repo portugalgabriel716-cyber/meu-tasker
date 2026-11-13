@@ -2,6 +2,6 @@ dados/
 backup/
 extras/
 tests/
-.venv/
-**/__pycache__/
+target/
+tasker
 *.log
