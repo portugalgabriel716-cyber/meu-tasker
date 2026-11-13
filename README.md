@@ -1,29 +1,47 @@
 # Tasker — refill automático da Lidl Connect
 
 Vigia o volume de *Unlimited Refill* da conta Lidl Connect e pede o refill sozinho
-antes de acabar. Roda em **Linux e Windows** com um clique, e precisa **só do
-Python 3.8+**: nada de `pip install`, nada de navegador escondido.
+antes de acabar. Programa nativo em **Rust**, com janela própria no estilo do
+macOS (tema claro e escuro), para **Linux e Windows**. Nada de navegador, nada
+de Python: é um executável só.
 
 ## Começar
 
-**Linux:** dê dois cliques no `Tasker.sh` (ou rode `python3 Tasker.pyw`). Na aba
-*Ajustes → Sistema*, clique em **Criar atalho**: aparece o ícone na área de
-trabalho e no menu. Daí em diante é só clicar nele.
+Precisa do [Rust](https://rustup.rs) para compilar (só na primeira vez ou quando
+o código mudar). No Linux também valem os pacotes de sempre de X11/Wayland, que
+quase todo desktop já tem.
 
-**Windows:** instale o Python de [python.org](https://www.python.org/downloads/)
-(o instalador padrão já serve) e dê dois cliques no **`Tasker.pyw`**. Em
-*Ajustes → Sistema*, **Criar atalho** põe o ícone na área de trabalho e no menu
-Iniciar.
+**Linux:** dê dois cliques no `Tasker.sh` (ou rode `./Tasker.sh`): ele compila se
+preciso e abre. Em *Ajustes → Sistema*, clique em **Criar atalho**: aparece o
+ícone na área de trabalho e no menu.
 
-O Tasker abre numa janela própria (o Chrome ou Edge que você já tem, em "modo app";
-sem nenhum dos dois, abre no navegador padrão). Na primeira vez, se não houver
-sessão salva, ele pede login.
+**Windows:** ponha o `tasker.exe` numa pasta só dele (o `dados/` é criado ao lado)
+e dê dois cliques; não precisa instalar nada, nem o Rust. Como o arquivo não é
+assinado, o Windows avisa na primeira vez: *Mais informações → Executar assim
+mesmo*. Em *Ajustes → Sistema*, **Criar atalho** põe o ícone na área de trabalho e
+no menu Iniciar.
 
-* **Fechar a janela não para o Tasker** — ele segue vigiando em segundo plano.
-  Clicar no atalho de novo só reabre a janela.
+**Gerar os dois programas:** no Linux, `./Compilar.sh` deixa `tasker` e
+`tasker.exe` na pasta do projeto. Precisa do MinGW uma vez só: `sudo apt install
+gcc-mingw-w64-x86-64` e `rustup target add x86_64-pc-windows-gnu`. No próprio
+Windows, `cargo build --release` gera `target\release\tasker.exe`.
+
+**Mandar pra outra pessoa:** envie só o `tasker.exe`. **Nunca a pasta `dados/`**:
+ela tem a sua sessão e a sua senha. Quem recebe faz login com a própria conta.
+
+Na primeira vez, se não houver sessão salva, ele pede login. Quem vem da versão em
+Python continua logado: a pasta `dados/` é a mesma. Veja
+[Vindo da versão em Python](#vindo-da-versão-em-python).
+
+São dois processos do mesmo programa: o **serviço** (vigia o volume, sem janela)
+e a **janela**.
+
+* **Fechar a janela não para o Tasker**: o serviço segue vigiando em segundo
+  plano. Clicar no atalho de novo só abre a janela (ou traz pra frente, se já
+  estiver aberta).
 * Pra encerrar de vez: *Ajustes → Sistema → Sair*.
-* **Iniciar junto com o computador**: chave em *Ajustes → Sistema*. Ele sobe em
-  segundo plano, sem abrir janela.
+* **Iniciar junto com o computador**: chave em *Ajustes → Sistema*. O serviço sobe
+  em segundo plano, sem abrir janela.
 
 ## Login
 
@@ -32,7 +50,7 @@ Três jeitos, todos pela tela:
 | | quando usar |
 |---|---|
 | **Número e senha** | o normal. Marcando "lembrar", o Tasker refaz o login sozinho quando a sessão cair. |
-| **Entrar pelo navegador** | quando a Lidl pede captcha/segundo fator, ou se você não quer guardar senha. Abre o site da Lidl numa janela à parte (perfil temporário); você loga normalmente e o Tasker pega a sessão e fecha a janela. |
+| **Entrar pelo navegador** | quando a Lidl pede captcha/segundo fator, ou se você não quer guardar senha. Abre o site da Lidl no Chrome/Edge que você já tem (perfil temporário); você loga normalmente e o Tasker pega a sessão e fecha a janela. É o único uso de navegador no programa. |
 | **Sessão já salva** | quem vem da versão 1 continua logado: a sessão foi migrada. |
 
 A senha guardada fica em `dados/credenciais.json`, em texto puro, legível só pelo
@@ -41,7 +59,12 @@ o login automático tem trava: espera crescente entre tentativas, no máximo 3
 falhas antes de parar por 6 h, e parada total se a Lidl pedir captcha. Os
 contadores ficam em disco, então reiniciar não zera a trava.
 
-## A tela
+## A janela
+
+Barra lateral, barra de ferramentas unificada e os três botões de janela, como num
+app de macOS. Atalhos: `Ctrl+1…4` trocam de aba, `Ctrl+R` checa agora, `Ctrl+S`
+salva os ajustes, `Ctrl+F` filtra o log, `Ctrl+,` abre os ajustes e `Ctrl+W` fecha
+a janela.
 
 * **Painel**: o balde de refill (com a marca do limite), a próxima checagem e o
   motivo dela, o ritmo de consumo, os refills de hoje, quanto tempo o último
@@ -50,8 +73,8 @@ contadores ficam em disco, então reiniciar não zera a trava.
   cada um.
 * **Log**: ao vivo, com filtro.
 * **Ajustes**: todos os ajustes, que valem **na hora** (não precisa reiniciar),
-  mais conta e sistema (iniciar com o computador, atalho, ligar/desligar o
-  monitor, testar aviso).
+  mais conta, sistema (iniciar com o computador, atalho, ligar/desligar o
+  monitor, testar aviso) e aparência (tema; moldura própria ou a do sistema).
 * **Pausar** (30 min, 1 h, 2 h, até você voltar): o Tasker fica **mudo**, sem
   renovar token nem pedir refill. Use isso pra entrar na conta pelo celular ou
   pelo site sem os dois se derrubarem, já que a Lidl aceita uma sessão por vez.
@@ -128,19 +151,20 @@ completa, com explicação e limites, está em [`tasker/config.py`](tasker/confi
 ## Linha de comando
 
 ```bash
-python3 Tasker.pyw                 # abre o Tasker (ou só a janela, se já estiver rodando)
-python3 Tasker.pyw --fundo         # sobe sem janela
-python3 Tasker.pyw --once          # uma checagem e sai (confirma o refill se pedir um)
-python3 Tasker.pyw --status        # mostra o volume
-python3 Tasker.pyw --login         # login pelo navegador
-python3 Tasker.pyw --set-credentials | --forget-credentials
-python3 Tasker.pyw --test-notification
-python3 Tasker.pyw --bootstrap     # mostra o refresh token (pra levar a sessão pra um servidor)
-python3 Tasker.pyw --loop          # só o motor, log no terminal (servidor)
+./tasker                      # abre o Tasker (sobe o serviço se preciso + janela)
+./tasker --fundo              # só o serviço, sem janela
+./tasker --once               # uma checagem e sai (confirma o refill se pedir um)
+./tasker --status             # mostra o volume
+./tasker --login              # login pelo navegador
+./tasker --set-credentials    # guarda número e senha (--forget-credentials apaga)
+./tasker --test-notification
+./tasker --bootstrap          # mostra o refresh token (pra levar a sessão pra um servidor)
+./tasker --atualizar-atalhos  # conserta atalhos que ainda abrem a versão antiga
+./tasker --loop               # só o motor, log no terminal (servidor)
 ```
 
 Com o Tasker já rodando, `--once` vira "checar agora" e `--login` abre o login
-pela instância que está no ar, então nada briga pela sessão.
+pelo serviço que está no ar, então nada briga pela sessão.
 
 **Arquivos de controle** (qualquer script pode criar, dentro de `dados/`):
 `tasker.pause` (`{"until": <timestamp>}`, `0` = até apagar), `tasker.stop`
@@ -152,10 +176,12 @@ login caiu, refill falhando 4 vezes seguidas.
 
 ## Servidor (sem deixar o PC ligado)
 
-O mesmo programa roda em servidor: `--loop` (fica rodando) ou `--once` (cron). A
-configuração vem por variável de ambiente: `TASKER_REFRESH_TOKEN` (semente, de
-`--bootstrap`), `TASKER_MSISDN` + `TASKER_PASSWORD` (aí ele reloga sozinho pra
-sempre), `TASKER_DATA_DIR` ou `TASKER_STATE`, e qualquer `TASKER_*` dos ajustes.
+O mesmo programa roda em servidor: `--loop` (fica rodando) ou `--once` (cron). Em
+servidor compile só o motor, sem janela: `cargo build --release
+--no-default-features`. A configuração vem por variável de ambiente:
+`TASKER_REFRESH_TOKEN` (semente, de `--bootstrap`), `TASKER_MSISDN` +
+`TASKER_PASSWORD` (aí ele reloga sozinho pra sempre), `TASKER_DATA_DIR` ou
+`TASKER_STATE`, e qualquer `TASKER_*` dos ajustes.
 
 Duas regras:
 
@@ -168,7 +194,7 @@ Duas regras:
 
 ```ini
 [Service]
-ExecStart=/usr/bin/python3 /opt/tasker/Tasker.pyw --loop
+ExecStart=/opt/tasker/tasker --loop
 Environment=TASKER_DATA_DIR=/var/lib/tasker
 Environment=TASKER_REFRESH_TOKEN=cole-aqui
 #Environment=TASKER_MSISDN=...  TASKER_PASSWORD=...  TASKER_NTFY_TOPIC=...
@@ -178,10 +204,12 @@ StateDirectory=tasker
 
 **Docker**: `docker build -t tasker .` e
 `docker run -d --restart unless-stopped -v tasker-state:/data -e TASKER_REFRESH_TOKEN=... tasker`.
-O volume `/data` **não é opcional**. Mantém o `cloud_state.json` da versão antiga.
+A imagem tem ~20 MB. O volume `/data` **não é opcional**. Mantém o
+`cloud_state.json` da versão antiga.
 
 **GitHub Actions**: [`.github/workflows/tasker.yml`](.github/workflows/tasker.yml)
-roda `--once` a cada 5 min, com o estado no cache do Actions. Limitações: o cron do
+roda `--once` a cada 5 min, com o estado no cache do Actions (o programa só é
+recompilado quando o código muda). Limitações: o cron do
 GitHub atrasa, e ele desliga o agendamento depois de 60 dias sem commit.
 
 **Hospedagem PHP** (htdocs): [`extras/site-php/`](extras/site-php/LEIA-ME.md) é
@@ -191,26 +219,36 @@ uma implementação à parte, em PHP, pra hospedagem compartilhada.
 
 | | |
 |---|---|
-| `Tasker.pyw` | o programa (duplo clique no Windows; `python3 Tasker.pyw` em qualquer lugar) |
-| `Tasker.sh` | atalho do Linux pro mesmo |
-| `tasker/` | o código: `engine.py` (o motor), `lidl.py` (a API), `app.py` (tela + linha de comando), `server.py`, `browser_login.py`, `stress.py` (teste de estresse), `system.py`, `config.py`, `ui/` |
+| `Tasker.sh` | compila se preciso e abre (Linux) |
+| `Compilar.sh` | gera `tasker` e `tasker.exe` de uma vez (no Linux) |
+| `tasker` / `tasker.exe` | o programa, gerado pelo build |
+| `src/` | o código: `engine.rs` (o motor), `lidl.rs` (a API), `daemon.rs` (o serviço), `gui/` (a janela), `browser_login.rs`, `stress.rs`, `system.rs`, `config.rs`, `main.rs` (linha de comando) |
+| `assets/` | ícone e a fonte Inter (licença OFL) |
 | `dados/` | **tudo que é seu**: sessão, senha, ajustes, log, históricos. Pra levar o Tasker pra outro PC, copie a pasta inteira. |
 | `tests/` | testes offline (API de mentira) |
 | `extras/site-php/` | a versão PHP |
 | `Dockerfile`, `.github/` | servidor |
 | `backup/` | cópia da versão 1, de antes da reestruturação |
 
+A janela conversa com o serviço por uma API só em `127.0.0.1`, com chave por
+execução guardada em `dados/tela.json` (legível só pelo seu usuário).
+
 ## Testes
 
 ```bash
-python3 tests/test_tasker.py              # 60 testes, offline, ~45 s
+cargo test                                # 60+ testes, offline, ~3 s
 python3 extras/site-php/test_php.py       # a versão PHP (precisa de php-cli)
 ```
 
-Rodam numa pasta temporária, contra uma API de mentira que imita a de verdade
-(token que rotaciona, 500 mentiroso, captcha...). Uma sentinela reprova a suíte
-se algum arquivo seu em `dados/` mudar. Se houver Chrome/Edge instalado, o login
-pelo navegador é testado de verdade (headless, numa página local).
+Rodam em pastas temporárias, contra uma API de mentira que imita a de verdade
+(token que rotaciona, 500 mentiroso, captcha, conexão derrubada...). Se houver
+Chrome/Edge instalado, o login pelo navegador é testado de verdade (headless,
+numa página local).
+
+Pra ver as telas sem abrir nada na sua área de trabalho: com
+`TASKER_FOTOS=pasta`, a janela percorre as abas nos dois temas, grava um PNG de
+cada e fecha (funciona em `xvfb-run`). Use junto de `TASKER_DATA_DIR` pra não
+misturar com os seus dados.
 
 ## Se der problema
 
@@ -218,19 +256,31 @@ pelo navegador é testado de verdade (headless, numa página local).
   servidor com o Tasker). A Lidl só aceita uma sessão. Use a pausa quando for
   usar a conta.
 * **"Já está rodando"**: é o lock. O atalho só reabre a janela; pra encerrar, use
-  *Sair* na tela ou crie `dados/tasker.stop`.
+  *Sair* nos ajustes ou crie `dados/tasker.stop`.
+* **Cantos pretos na janela**: seu desktop está sem compositor. Ligue a *Barra de
+  título do sistema* em *Ajustes → Aparência* (ou `TASKER_DECORACAO=sistema`).
 * **Refill não sai**: a aba *Log* filtrada por "refill" mostra o motivo (balde
   cheio, cooldown, espera depois de falhas, resposta da API).
 * **Login pelo navegador não abre**: precisa de Chrome, Edge, Chromium ou Brave
   instalado. Sem nenhum, use número e senha.
 
+## Vindo da versão em Python
+
+A versão 3 é o mesmo Tasker reescrito em Rust. A pasta `dados/` é lida como está
+(sessão, senha, ajustes, históricos), e o lock é o mesmo, então as duas nunca
+giram a sessão juntas.
+
+Se o serviço em Python ainda estiver rodando, a janela nova conecta nele e mostra
+**Trocar agora** no Painel: um clique encerra o antigo e sobe o novo, sem login. Os
+atalhos e o "iniciar com o computador" que apontavam pro `Tasker.pyw` passam a
+abrir o programa novo sozinhos (ou com `./tasker --atualizar-atalhos`).
+
 ## O que mudou da versão 1
 
 A v1 mantinha um Chromium escondido (Playwright, ~300 MB) só pra fazer as chamadas
-de dentro da página. Agora o Tasker fala HTTP direto com a API. Com isso foram
-embora o watchdog de navegador travado, o keep-alive do portal, os cookies e o
-relogin no Contao. Os ajustes que só existiam por causa do navegador (keep-alive,
+de dentro da página. Da v2 em diante o Tasker fala HTTP direto com a API. Com isso
+foram embora o watchdog de navegador travado, o keep-alive do portal, os cookies e
+o relogin no Contao. Os ajustes que só existiam por causa do navegador (keep-alive,
 headless, reabrir navegador) somem do `config.json` na próxima gravação; o resto
-vale como estava. Monitor e tela agora são um processo só, e os ajustes valem sem
-reiniciar. A versão cloud (`tasker_cloud.py`) virou o modo `--loop`/`--once` do
-mesmo programa.
+vale como estava. A versão cloud (`tasker_cloud.py`) virou o modo `--loop`/`--once`
+do mesmo programa.

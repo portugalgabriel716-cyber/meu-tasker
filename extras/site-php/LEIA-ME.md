@@ -26,8 +26,8 @@ Use GitHub Actions ou uma VM (veja a seção "Servidor" do [README](../../README
 | `tasker-config.php` | `htdocs/` | suas configurações (crie do `.example`) |
 | `.htaccess` | `htdocs/` | impede baixar o config e o estado |
 
-`tasker-check.php` só pro teste, e depois apague. **Nada de Python vai pro host** —
-o resto do projeto (`Tasker.pyw`, `tasker/`, `dados/`) fica no PC. O `test_php.py` também não precisa subir.
+`tasker-check.php` só pro teste, e depois apague. **Do programa em Rust nada vai pro host** —
+o resto do projeto (`tasker`, `src/`, `dados/`) fica no PC. O `test_php.py` também não precisa subir.
 
 ## Passo a passo
 
@@ -43,7 +43,7 @@ preenchendo a `key` e:
 
 * **`msisdn` + `password`** — recomendado: com os dois ele refaz a sessão sozinho,
   pra sempre; ou
-* **`refresh_token`** — pegue com `python3 Tasker.pyw --bootstrap` no PC. Só
+* **`refresh_token`** — pegue com `./tasker --bootstrap` no PC. Só
   que ele *rotaciona*: se o host perder o estado, você precisa gerar outro.
 
 **3. Suba os arquivos** e teste no navegador:
