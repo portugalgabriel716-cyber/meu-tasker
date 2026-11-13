@@ -1,0 +1,57 @@
+[package]
+name = "tasker"
+version = "3.0.0"
+edition = "2021"
+description = "Refill automático da Lidl Connect"
+license = "MIT"
+publish = false
+default-run = "tasker"
+
+[lib]
+name = "tasker"
+path = "src/lib.rs"
+
+[[bin]]
+name = "tasker"
+path = "src/main.rs"
+
+[features]
+# Servidor/Docker/Actions: `--no-default-features` compila só o motor.
+default = ["janela"]
+janela = ["dep:eframe", "dep:egui", "dep:egui-phosphor", "dep:image"]
+
+[dependencies]
+eframe = { version = "0.36", optional = true, default-features = false, features = [
+    "default_fonts", "glow", "x11", "wayland",
+] }
+egui = { version = "0.36", optional = true }
+egui-phosphor = { version = "0.14", optional = true, default-features = false, features = ["regular", "fill"] }
+ureq = { version = "2.12", default-features = false, features = ["tls", "json"] }
+tiny_http = "0.12"
+tungstenite = { version = "0.30", default-features = false, features = ["handshake"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
+getrandom = "0.3"
+base64 = "0.22"
+image = { version = "0.25", optional = true, default-features = false, features = ["png"] }
+
+[target.'cfg(unix)'.dependencies]
+libc = "0.2"
+
+[target.'cfg(windows)'.dependencies]
+winreg = "0.55"
+windows-sys = { version = "0.61", features = [
+    "Win32_Foundation", "Win32_Storage_FileSystem", "Win32_System_IO",
+    "Win32_System_Console", "Win32_UI_WindowsAndMessaging",
+] }
+
+[build-dependencies]
+winresource = "0.1"
+
+[profile.release]
+opt-level = 3
+lto = "thin"
+codegen-units = 4
+strip = true
+panic = "unwind"
